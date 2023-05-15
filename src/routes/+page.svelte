@@ -19,11 +19,6 @@
 			body: JSON.stringify(data)
 		})
 
-		if (!addResponse.ok) {
-			error = "Error adding webhook: " + addResponse.status + addResponse.statusText;
-			return;
-		}
-
 		const removeResponse = await fetch("https://api.carterlabs.ai/webhook/remove", {
 			method: "POST",
 			headers: {
@@ -31,11 +26,6 @@
 			},
 			body: JSON.stringify(data)
 		})
-
-		if (!removeResponse.ok) {
-			error = "Error removing webhook: " + removeResponse.status + removeResponse.statusText;
-			return;
-		}
 
 		const removeOutput = await removeResponse.json();
 		output = removeOutput
@@ -59,7 +49,15 @@
 				body: JSON.stringify(data)
 			})
 
-			output = await response.json();
+			const outputData = await response.json();
+			console.log(outputData)
+			if (outputData.webhooks) {
+				output = outputData
+				error = null;
+			} else {
+				error = "No data returned. This may be an error."
+				console.log(error)
+			}
 	}
 	async function removePlugin() {
 			const data = {
@@ -82,14 +80,16 @@
 			console.log(outputData)
 			if (outputData.webhooks) {
 				output = outputData
+				error = null;
 			} else {
 				error = "No data returned. This may be an error."
+				console.log(error)
 			}
 	}
 </script>
 
-<div class="flex w-full justify-center">
-	<div class="flex flex-col items-center m-4 gap-4 md:w-1/2">
+<div class="flex w-full justify-center mt-20">
+	<div class="flex flex-col items-center m-4 gap-4 md:w-96">
 		<h1 class="text-2xl gradient-heading">Carter Connect</h1>
 		<div class="flex flex-col gap-2">
 			<h2>Add Your Plugin Here</h2>
@@ -105,20 +105,21 @@
 				<label class="label" for="apiKey">API Key</label>
 				<input bind:value={apiKey} class="input" type="password" name="apiKey" id="apiKey">
 			</div>
-			<div class="container">
-				<button on:click={addPlugin} class="btn variant-filled-success box" type="submit">Add</button>
-				<button on:click={listWebooks} class="btn variant-filled-tertiary box">List</button>
+			<div class="flex gap-2 justify-between">
 				<button on:click={removePlugin} class="btn variant-filled-error box">Remove</button>
+				<button on:click={listWebooks} class="btn variant-filled-tertiary box">List</button>
+				<button on:click={addPlugin} class="btn variant-filled-success box" type="submit">Add</button>
 			</div>
 		</form>
-		<h2>Output</h2>
 		<p>
 			{#if error}
-			{error}
+			<h2>Error</h2>
+				{error}
 			{/if}
 		</p>
 		<ul>
-			{#if output && output.success}
+			{#if output && output.success && output.webhooks.length > 0}
+			<h2>Output</h2>
 				{#each output.webhooks as url}
 					<li>{url}</li>
 				{/each}
@@ -128,14 +129,7 @@
 </div>
 
 <style>
-	.container {
-  display: flex;
-	justify-content: space-between;
-	gap: 10rem;
-}
-
-
-.box:first-child { flex-grow: 1; flex-basis: 0 }
-
-.box:last-child { flex-grow: 1; flex-basis: 0 }
+	button {
+		font-weight: 500;
+	}
 </style>
